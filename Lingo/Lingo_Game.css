@@ -1,0 +1,29 @@
+/* CSS code */
+* { box-sizing: border-box; }
+button {
+    margin: auto;
+    background: white;
+    border: 1px solid black;
+    padding: 10px 15px;
+    font-size: 20px;
+}
+
+.centered-checkbox-container {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.centered-checkbox {
+    display: inline-block;
+    margin: 0 auto;
+}
+button:hover { background-color: green; color: white; }
+body { background: white; }
+#msgBox { text-align: center; font-size: 3.5em; font-family: 'Comic Sans MS', sans-serif; margin: 0.1em 0em; }
+#smallMsg { text-align: center; padding: 0px 0px 10px 0px; font-size: 1.1em; }
+#guess { border: 1px black solid; padding: 5px; margin: 10px auto; display: block; }
+#container { margin: auto; width: 100em; text-align: center; }
+.correct { background: green; }
+.wrongplace { background: yellow; }
+.default { background: #ffff99; }
+.square { vertical-align: top; margin-top: 4px; border: 1px black solid; border-radius: 5px; display: inline-block; height: 1.25em; width: 1.25em; text-align: center; font-size: 3.5em; font-family: 'Lato', sans-serif; }
