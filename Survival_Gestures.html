@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gesture Elimination (15 Rounds)</title>
+  <style>
+    :root{
+      --bg:#06060a;
+      --magenta:#ff2bd6;
+      --aqua:#28f3ff;
+      --violet:#a855f7;
+      --red:#ff2b2b;
+      --card:#0b0b13;
+      --muted:#b7b7c6;
+      --shadow: 0 0 24px rgba(40,243,255,.14), 0 0 36px rgba(255,43,214,.10);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 50% 10%, rgba(40,243,255,.10), transparent 60%),
+                  radial-gradient(900px 500px at 20% 70%, rgba(255,43,214,.10), transparent 60%),
+                  var(--bg);
+      color:white;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .wrap{
+      width:min(1100px, 100%);
+    }
+
+    header{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .roundTitle{
+      font-weight:900;
+      font-size: clamp(34px, 6vw, 64px);
+      letter-spacing:.06em;
+      line-height:1;
+      text-transform:uppercase;
+      color: var(--aqua);
+      text-shadow:
+        0 0 0 rgba(0,0,0,0),
+        0 0 14px rgba(40,243,255,.45),
+        0 0 34px rgba(255,43,214,.22);
+      border: 0;
+      margin:0;
+    }
+
+    .sub{
+      color:var(--muted);
+      margin-top:6px;
+      font-size:14px;
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    button{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color:white;
+      padding:10px 14px;
+      border-radius:14px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 10px 20px rgba(0,0,0,.25);
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    button:hover{ background: rgba(255,255,255,.10); }
+    button:active{ transform: translateY(1px); }
+    button.primary{
+      border-color: rgba(40,243,255,.30);
+      background: rgba(40,243,255,.10);
+    }
+    button.danger{
+      border-color: rgba(255,43,43,.35);
+      background: rgba(255,43,43,.12);
+    }
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:18px;
+      margin-top:18px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      position:relative;
+      border-radius:22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      padding:18px 18px 16px;
+      min-height: 280px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      isolation:isolate;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: radial-gradient(400px 220px at 50% 10%, rgba(40,243,255,.14), transparent 60%),
+                  radial-gradient(320px 200px at 20% 70%, rgba(255,43,214,.14), transparent 60%);
+      opacity:.65;
+      z-index:-1;
+    }
+
+    .icon{
+      font-size: 96px;
+      line-height:1;
+      margin-top:14px;
+      display:flex;
+      justify-content:center;
+      filter: drop-shadow(0 0 14px rgba(40,243,255,.18))
+              drop-shadow(0 0 14px rgba(255,43,214,.18));
+    }
+    .label{
+      margin-top:16px;
+      text-align:center;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size: 20px;
+      color: white;
+      text-shadow: 0 0 12px rgba(40,243,255,.18);
+    }
+
+    .hint{
+      text-align:center;
+      margin-top:8px;
+      color:rgba(255,255,255,.72);
+      font-size:13px;
+    }
+
+    .eliminated{
+      border-color: rgba(255,43,43,.40);
+      box-shadow: 0 0 0 2px rgba(255,43,43,.18), var(--shadow);
+      opacity:.92;
+    }
+
+    .safeGlow{
+      border-color: rgba(40,243,255,.40);
+      box-shadow: 0 0 0 2px rgba(40,243,255,.16), var(--shadow);
+    }
+
+    .statusBar{
+      margin-top:16px;
+      padding:12px 14px;
+      border-radius:16px;
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.10);
+      color:rgba(255,255,255,.85);
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .statusLeft{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.86);
+    }
+
+    .pill.cyan{ border-color: rgba(40,243,255,.24); background: rgba(40,243,255,.08); }
+    .pill.magenta{ border-color: rgba(255,43,214,.24); background: rgba(255,43,214,.08); }
+    .pill.red{ border-color: rgba(255,43,43,.24); background: rgba(255,43,43,.10); }
+
+    .small{
+      font-size:12px;
+      color: rgba(255,255,255,.70);
+    }
+
+    kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.9);
+    }
+
+    /* Keep both X overlays perfectly centered and identical */
+    .x{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      opacity:0;
+      transform: scale(.98);
+      transition: opacity .12s ease, transform .12s ease;
+    }
+    .x.visible{
+      opacity:1;
+      transform: scale(1);
+    }
+    .x svg{
+      width:min(66%, 260px);
+      height:auto;
+      display:block;
+      filter: drop-shadow(0 0 18px rgba(255,43,43,.35));
+    }
+    /* Slightly separate two X's while staying centered (optional, subtle) */
+    .x.x2 svg{
+      transform: rotate(0deg);
+      opacity:1;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1 class="roundTitle" id="roundTitle">ROUND 1</h1>
+        <div class="sub" id="roundSub">Spin the X — it will stop on its own and eliminate a gesture.</div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="startBtn">Start Spin</button>
+        <button id="elim2Btn">Eliminate 2</button>
+        <button id="nextBtn" disabled>Next Round</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <div class="statusBar">
+      <div class="statusLeft">
+        <span class="pill cyan">Rounds: <span id="roundCount">16</span></span>
+        <span class="pill magenta">Mode: <span id="modeLabel">Eliminate 1</span></span>
+        <span class="pill red">Eliminated: <span id="elimLabel">—</span></span>
+      </div>
+      <div class="small">
+        Keyboard: <kbd>S</kbd> start • <kbd>N</kbd> next • <kbd>R</kbd> reset
+      </div>
+    </div>
+
+    <section class="grid" id="grid">
+      <!-- Cards injected by JS -->
+    </section>
+  </div>
+
+<script>
+/**
+ * Edit gestures here.
+ * Each round has 3 options: { label, icon }.
+ * icon can be emoji, short text, or a single character.
+ */
+const ROUNDS = [
+  [{label:"Rock, Paper, Scissors", icon:"✊"},{label:"Praise Hands", icon:"🙌"},{label:"Flamingo", icon:"🦩"}],
+  [{label:"Wave", icon:"👋"},{label:"Clap", icon:"👏"},{label:"Peace Sign", icon:"✌️"}],
+  [{label:"Heart Hands", icon:"🫶"},{label:"Point Up", icon:"☝️"},{label:"Thumbs Up", icon:"👍"}],
+  [{label:"Air Guitar", icon:"🎸"},{label:"Ninja Pose", icon:"🥷"},{label:"Robot", icon:"🤖"}],
+  [{label:"Muscle Flex", icon:"💪"},{label:"Pray", icon:"🙏"},{label:"Jazz Hands", icon:"👐"}],
+  [{label:"Superman", icon:"🦸"},{label:"Ballerina", icon:"🩰"},{label:"T-Rex Arms", icon:"🦖"}],
+  [{label:"Disco", icon:"🕺"},{label:"Manikin", icon:"🧍"},{label:"Biting Metal", icon:"🥇"}],
+  [{label:"Salute", icon:"🫡"},{label:"Facepalm", icon:"🤦"},{label:"Shh", icon:"🤫"}],
+  [{label:"Chicken Wings", icon:"🐔"},{label:"Mind Blown", icon:"🤯"},{label:"Party", icon:"🥳"}],
+  [{label:"Dance", icon:"💃"},{label:"Basketball", icon:"🏀"},{label:"Run", icon:"🏃"}],
+  [{label:"Royality", icon:"👑"},{label:"Swimming", icon:"🏊"},{label:"On Fire", icon:"🔥"}],
+  [{label:"Hands on Head", icon:"🙆"},{label:"Arms Crossed", icon:"🙅"},{label:"OK Sign", icon:"👌"}],
+  [{label:"Spider-Man", icon:"🕷️"},{label:"Penguin Waddle", icon:"🐧"},{label:"Boxing", icon:"🥊"}],
+  [{label:"Laugh", icon:"😂"},{label:"Angry", icon:"😡"},{label:"Sleep", icon:"😴"}],
+  [{label:"Lifting Weights", icon:"❚█══█❚"},{label:"Twister", icon:"🌀"},{label:"Baseball", icon:"⚾️"}],
+  [{label:"Camera Pose", icon:"📸"},{label:"Reading", icon:"📖"},{label:"Salute", icon:"🫡"}],
+];
+
+// ---------- UI / Logic ----------
+const grid = document.getElementById("grid");
+const roundTitle = document.getElementById("roundTitle");
+const roundSub = document.getElementById("roundSub");
+const roundCount = document.getElementById("roundCount");
+const modeLabel = document.getElementById("modeLabel");
+const elimLabel = document.getElementById("elimLabel");
+
+const startBtn = document.getElementById("startBtn");
+const elim2Btn = document.getElementById("elim2Btn");
+const nextBtn = document.getElementById("nextBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+let roundIndex = 0;
+let spinning = false;
+let spinTimer = null;
+let currentX1 = 0; // which card currently has X #1
+let currentX12 = 1; // which card currently has X #2
+let eliminatedIdx = null;
+let eliminateTwo = false;
+
+function neonXsvg(){
+  // Uses CSS var --red at runtime
+  const red = getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#ff2b2b';
+  return `
+  <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+    <path d="M40 55 L55 40 L160 145 L145 160 Z" fill="${red}" />
+    <path d="M145 40 L160 55 L55 160 L40 145 Z" fill="${red}" />
+  </svg>`;
+}
+
+function renderRound(){
+  const roundNum = roundIndex + 1;
+  roundTitle.textContent = `ROUND ${roundNum}`;
+  roundCount.textContent = String(ROUNDS.length);
+
+  // purely a label; feel free to change your rules however you want
+  modeLabel.textContent = eliminateTwo ? "Eliminate 2" : ((roundNum >= 4) ? "Speed-up" : "Warm-up");
+
+  elimLabel.textContent = "—";
+  eliminatedIdx = null;
+
+  grid.innerHTML = "";
+
+  const opts = ROUNDS[roundIndex];
+  opts.forEach((opt, idx) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.idx = String(idx);
+
+    card.innerHTML = `
+      <div class="icon">${opt.icon}</div>
+      <div class="label">${opt.label}</div>
+      <div class="hint">Choose this gesture as a team.</div>
+      <div class="x x1" aria-hidden="true">${neonXsvg()}</div>
+      <div class="x x2" aria-hidden="true">${neonXsvg()}</div>
+`;
+    grid.appendChild(card);
+  });
+
+  // set initial X position (hidden until spin starts)
+  setXVisible(false);
+  setButtons({canStart:true, canNext:false});
+  roundSub.textContent = "Spin the X — it will stop on its own and eliminate a gesture.";
+}
+
+function cards(){
+  return Array.from(grid.querySelectorAll(".card"));
+}
+
+function setButtons({canStart, canNext}){
+  startBtn.disabled = !canStart;
+  nextBtn.disabled = !canNext;
+}
+
+function clearHighlights(){
+  cards().forEach(c => {
+    c.classList.remove("eliminated");
+    c.classList.remove("safeGlow");
+  });
+}
+
+
+function setXVisible(visible){
+  cards().forEach((c, idx) => {
+    const x1 = c.querySelector(".x.x1");
+    const x2 = c.querySelector(".x.x2");
+    if (x1) x1.classList.toggle("visible", visible && idx === currentX1);
+    if (x2) x2.classList.toggle("visible", visible && eliminateTwo && idx === currentX12);
+  });
+}
+
+function moveXTo(idx1, idx2=null){
+  currentX1 = idx1;
+  if (idx2 !== null) currentX12 = idx2;
+  setXVisible(true);
+}
+
+
+function startSpin(){
+  if (spinning) return;
+  spinning = true;
+  eliminatedIdx = null;
+  elimLabel.textContent = "—";
+  clearHighlights();
+
+  setButtons({canStart:false, canNext:false});
+
+  roundSub.textContent = "Spinning fast… slowing down…";
+
+  // Start with random position
+  {
+  const a = Math.floor(Math.random()*3);
+  let b = Math.floor(Math.random()*3);
+  if (eliminateTwo){
+    while (b === a) b = Math.floor(Math.random()*3);
+    moveXTo(a, b);
+  } else {
+    moveXTo(a);
+  }
+}
+
+
+  const FAST_MS = 3000;
+  const SLOW_MS = 3000;
+  const fastInterval = 90;   // very fast
+  const slowStart = 140;     // beginning of slowdown
+  const slowEnd = 700;       // final crawl
+
+  const t0 = performance.now();
+
+  function tick(){
+    if (!spinning) return;
+
+    {
+  const a = Math.floor(Math.random()*3);
+  let b = Math.floor(Math.random()*3);
+  if (eliminateTwo){
+    while (b === a) b = Math.floor(Math.random()*3);
+    moveXTo(a, b);
+  } else {
+    moveXTo(a);
+  }
+}
+
+
+    const elapsed = performance.now() - t0;
+    let interval;
+
+    if (elapsed < FAST_MS){
+      // FAST PHASE
+      interval = fastInterval;
+    } else if (elapsed < FAST_MS + SLOW_MS){
+      // SLOWDOWN PHASE (ease out)
+      const p = (elapsed - FAST_MS) / SLOW_MS; // 0..1
+      interval = Math.round(slowStart + (slowEnd - slowStart) * (p * p));
+    } else {
+      finishSpin();
+      return;
+    }
+
+    spinTimer = setTimeout(tick, interval);
+  }
+
+  spinTimer = setTimeout(tick, fastInterval);
+}
+
+
+
+function finishSpin(){
+  if (!spinning) return;
+  spinning = false;
+  if (spinTimer) clearTimeout(spinTimer);
+  spinTimer = null;
+
+  const opts = ROUNDS[roundIndex];
+  const total = opts.length;
+
+  let eliminated = [];
+
+  if (eliminateTwo) {
+    let a = currentX1;
+    let b = currentX12;
+
+    // Safety: if they ended up the same (shouldn't), force b to a different one
+    if (a === b) {
+      do { b = Math.floor(Math.random() * total); } while (b === a);
+      currentX12 = b;
+      setXVisible(true);
+    }
+
+    eliminated = [a, b];
+  } else {
+    eliminated = [currentX1];
+  }
+
+  eliminatedIdx = eliminated[0];
+  elimLabel.textContent = eliminated.map(i => opts[i].label).join(" & ");
+
+  cards().forEach((c, idx) => {
+    if (eliminated.includes(idx)) c.classList.add("eliminated");
+    else c.classList.add("safeGlow");
+  });
+
+  roundSub.textContent = `Eliminated: ${eliminated.map(i => opts[i].label).join(" & ")}. Click Next Round when ready.`;
+  setButtons({canStart:true, canNext:true});
+}
+
+function nextRound(){
+  if (roundIndex >= ROUNDS.length-1) {
+    roundTitle.textContent = "GAME OVER";
+    roundSub.textContent = "16 rounds completed. Hit Reset to run it again.";
+    setButtons({canStart:false, canNext:false});
+    return;
+  }
+  roundIndex += 1;
+  renderRound();
+}
+
+function resetGame(){
+  if (spinTimer) clearTimeout(spinTimer);
+  spinning = false;
+  spinTimer = null;
+  roundIndex = 0;
+  renderRound();
+}
+
+
+// Eliminate 2 toggle
+elim2Btn.addEventListener("click", () => {
+  eliminateTwo = !eliminateTwo;
+  elim2Btn.classList.toggle("danger", eliminateTwo);
+  elim2Btn.textContent = eliminateTwo ? "Eliminate 2 ✓" : "Eliminate 2";
+  modeLabel.textContent = eliminateTwo ? "Eliminate 2" : modeLabel.textContent;
+});
+
+// Buttons
+
+startBtn.addEventListener("click", startSpin);
+nextBtn.addEventListener("click", nextRound);
+resetBtn.addEventListener("click", resetGame);
+
+// Keyboard shortcuts
+window.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if (key === "s") startSpin();
+  if (key === "n") nextRound();
+  if (key === "r") resetGame();
+});
+
+// Init
+renderRound();
+</script>
+</body>
+</html>
